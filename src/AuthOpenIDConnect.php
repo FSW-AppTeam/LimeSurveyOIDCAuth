@@ -294,14 +294,11 @@ class AuthOpenIDConnect extends AuthPluginBase
                         // set default permissions
                         Permission::model()->setGlobalPermission($user->uid, 'auth_oidc');
                         
-                        // assign 'UU Researcher' role
-                        $role = Role::model()->findByAttributes(['name' => $this->get('defaultRole', null, null, false)]);
+                        // find the permissionTemplate aka Role
+                        $role = Permissiontemplates::model()->findByAttributes(['name' => $this->get('defaultRole', null, null, false)]);
 
                         if ($role) {
-                            $userRole = new UserRole();
-                            $userRole->user_id = $user->uid;
-                            $userRole->role_id = $role->id;
-                            $userRole->save();
+                            $role->applyToUser($user->uid);
                         }
                     } else {
                         $this->setAuthFailure(self::ERROR_USERNAME_INVALID, gT('Unable to create user'), $authEvent);
