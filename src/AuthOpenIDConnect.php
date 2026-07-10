@@ -112,6 +112,12 @@ class AuthOpenIDConnect extends AuthPluginBase
             'htmlOptions' => [
                 'readOnly' => true,
             ]
+        ],
+        'defaultRole' => [
+            'type' => 'string',
+            'label' => 'Default Role',
+            'help' => 'Name of the default role assigned to a new user.',
+            'default' => ''
         ]
     ];
 
@@ -276,7 +282,7 @@ class AuthOpenIDConnect extends AuthPluginBase
                 $user = $this->api->getUserByName($username);
 
                 if (empty($user)) {
-                    $user = new User;
+                    $user = new User();
                     $user->users_name = $username;
                     $user->setPassword(createPassword());
                     $user->full_name = $givenName . ' ' . $familyName;
@@ -287,7 +293,16 @@ class AuthOpenIDConnect extends AuthPluginBase
                     if ($user->save()) {
                         // set default permissions
                         Permission::model()->setGlobalPermission($user->uid, 'auth_oidc');
-                        Permission::model()->setGlobalPermission($user->uid, 'surveys', ['create_p']);
+                        
+                        // assign 'UU Researcher' role
+                        $role = Role::model()->findByAttributes(['name' => $this->get('defaultRole', null, null, false)]);
+
+                        if ($role) {
+                            $userRole = new UserRole();
+                            $userRole->user_id = $user->uid;
+                            $userRole->role_id = $role->id;
+                            $userRole->save();
+                        }
                     } else {
                         $this->setAuthFailure(self::ERROR_USERNAME_INVALID, gT('Unable to create user'), $authEvent);
                         return;
